@@ -3,9 +3,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-/* Arbitrary size */
-#define HISTSIZE      2000
-
 /* macros */
 #define MIN(a, b)		((a) < (b) ? (a) : (b))
 #define MAX(a, b)		((a) < (b) ? (b) : (a))
@@ -22,8 +19,6 @@
 
 #define TRUECOLOR(r,g,b)	(1 << 24 | (r) << 16 | (g) << 8 | (b))
 #define IS_TRUECOL(x)		(1 << 24 & (x))
-#define TLINE(y)       ((y) < term.scr ? term.hist[((y) + term.histi - term.scr \
-               + HISTSIZE + 1) % HISTSIZE] : term.line[(y) - term.scr])
 
 enum glyph_attribute {
 	ATTR_NULL       = 0,
@@ -80,18 +75,22 @@ typedef union {
 	uint ui;
 	float f;
 	const void *v;
+	const char *s;
 } Arg;
 
 void die(const char *, ...);
 void redraw(void);
 void draw(void);
 
+void kscrolldown(const Arg *);
+void kscrollup(const Arg *);
 void printscreen(const Arg *);
 void printsel(const Arg *);
 void sendbreak(const Arg *);
 void toggleprinter(const Arg *);
 
 int tattrset(int);
+int tisaltscr(void);
 void tnew(int, int);
 void tresize(int, int);
 void tsetdirtattr(int);
@@ -116,25 +115,23 @@ void *xmalloc(size_t);
 void *xrealloc(void *, size_t);
 char *xstrdup(char *);
 
-int isboxdraw(const Glyph *);
+int isboxdraw(Rune);
 ushort boxdrawindex(const Glyph *);
 #ifdef XFT_VERSION
 /* only exposed to x.c, otherwise we'll need Xft.h for the types */
-void drawboxes(XftDraw *, int, int, int, int, XftColor *, const XftGlyphFontSpec *, int);
+void boxdraw_xinit(Display *, Colormap, XftDraw *, Visual *);
+void drawboxes(int, int, int, int, XftColor *, XftColor *, const XftGlyphFontSpec *, int);
 #endif
-
-void kscrolldown(const Arg *);
-void kscrollup(const Arg *);
 
 /* config.h globals */
 extern char *utmp;
 extern char *stty_args;
 extern char *vtiden;
-extern char *worddelimiters;
+extern wchar_t *worddelimiters;
 extern int allowaltscreen;
 extern char *termname;
 extern unsigned int tabspaces;
-extern unsigned int alpha;
 extern unsigned int defaultfg;
 extern unsigned int defaultbg;
-extern const int boxdraw;
+extern float alpha;
+extern const int boxdraw, boxdraw_bold, boxdraw_braille;
